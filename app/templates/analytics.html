@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Model Analytics — HepatoAI</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0F1923;--surface:#162032;--card:#1C2D40;--card2:#213348;
+  --border:rgba(255,255,255,.08);--border2:rgba(255,255,255,.04);
+  --text:#E2EBF4;--muted:#7A9AB8;--muted2:#4A6A84;
+  --teal:#0DB4A0;--teal-d:#0A8F7E;--teal-glow:rgba(13,180,160,.12);
+  --s1:#10B981;--s2:#F59E0B;--s3:#F97316;--s4:#EF4444;
+  --mono:'IBM Plex Mono',monospace;--r:10px;
+}
+html{font-size:13.5px}
+body{font-family:'IBM Plex Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;flex-direction:column}
+::-webkit-scrollbar{width:5px}::-webkit-scrollbar-thumb{background:var(--card2);border-radius:3px}
+
+/* ── TOPBAR ── */
+.topbar{background:var(--surface);border-bottom:1px solid var(--border);padding:0 20px;height:36px;display:flex;align-items:center;justify-content:space-between;font-size:.64rem;color:var(--muted2);font-family:var(--mono);flex-shrink:0}
+.live-dot{width:5px;height:5px;border-radius:50%;background:var(--s1);animation:pulse 2s infinite;display:inline-block;margin-right:5px}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+
+/* ── HEADER ── */
+header{background:var(--surface);border-bottom:1px solid var(--border);flex-shrink:0}
+.hdr{max-width:1400px;margin:0 auto;padding:0 20px;height:54px;display:flex;align-items:center;justify-content:space-between}
+.brand{display:flex;align-items:center;gap:11px;text-decoration:none}
+.brand-icon{width:34px;height:34px;background:linear-gradient(135deg,var(--teal),var(--teal-d));border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;box-shadow:0 0 16px var(--teal-glow)}
+.brand-name{font-size:.95rem;font-weight:700;color:var(--text);letter-spacing:-.2px}
+.brand-sub{font-size:.58rem;color:var(--teal);font-family:var(--mono);text-transform:uppercase;letter-spacing:.8px;margin-top:1px}
+nav{display:flex;gap:6px;align-items:center}
+.nav-link{padding:6px 14px;border-radius:7px;font-size:.77rem;font-weight:500;color:var(--muted);text-decoration:none;transition:all .15s}
+.nav-link:hover{background:var(--card);color:var(--text)}
+.nav-link.active{background:var(--teal-glow);color:var(--teal)}
+.nav-btn{background:var(--teal);color:#fff;padding:7px 16px;border-radius:7px;font-size:.77rem;font-weight:600;text-decoration:none;transition:background .15s}
+.nav-btn:hover{background:var(--teal-d)}
+
+/* ── HERO ── */
+.hero{background:linear-gradient(135deg,var(--surface),var(--card));border-bottom:1px solid var(--border);padding:26px 20px;position:relative;overflow:hidden;flex-shrink:0}
+.hero::before{content:'';position:absolute;top:-60px;right:-60px;width:240px;height:240px;border-radius:50%;background:radial-gradient(circle,var(--teal-glow) 0%,transparent 70%);pointer-events:none}
+.hero-inner{max-width:1400px;margin:0 auto;display:flex;align-items:flex-end;justify-content:space-between;gap:24px;flex-wrap:wrap;position:relative;z-index:1}
+.hero-tag{display:inline-flex;align-items:center;gap:6px;font-size:.6rem;font-family:var(--mono);font-weight:500;text-transform:uppercase;letter-spacing:1px;color:var(--teal);padding:3px 10px;border-radius:4px;border:1px solid rgba(13,180,160,.3);background:var(--teal-glow);margin-bottom:10px}
+.hero-title{font-size:1.5rem;font-weight:700;color:var(--text);letter-spacing:-.4px;margin-bottom:6px}
+.hero-title span{color:var(--teal)}
+.hero-desc{font-size:.8rem;color:var(--muted);line-height:1.65;max-width:500px}
+.hero-stats{display:flex;gap:12px;flex-wrap:wrap}
+.hstat{background:rgba(255,255,255,.05);border:1px solid var(--border);border-radius:9px;padding:12px 18px;text-align:center;min-width:88px}
+.hstat-val{display:block;font-size:1.5rem;font-weight:700;font-family:var(--mono);line-height:1}
+.hstat-lbl{display:block;font-size:.6rem;font-family:var(--mono);text-transform:uppercase;letter-spacing:.5px;color:var(--muted2);margin-top:4px}
+
+/* ── MAIN ── */
+main{flex:1;max-width:1400px;margin:0 auto;padding:20px 20px 60px;width:100%}
+
+/* ── CARDS ── */
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:20px}
+.card-title{font-size:.6rem;font-family:var(--mono);text-transform:uppercase;letter-spacing:.9px;color:var(--muted2);margin-bottom:14px;display:flex;align-items:center;gap:7px}
+.card-title .ci{font-size:.82rem}
+.card-badge{margin-left:auto;font-size:.58rem;padding:2px 7px;border-radius:4px;background:var(--card2);color:var(--muted)}
+
+/* ── KPI STRIP ── */
+.kpi-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:18px}
+.kpi{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:16px 18px;border-top:2px solid var(--kc,var(--teal));transition:transform .15s}
+.kpi:hover{transform:translateY(-2px)}
+.kv{font-size:1.8rem;font-weight:700;font-family:var(--mono);color:var(--kc,var(--teal));line-height:1;letter-spacing:-.5px}
+.kl{font-size:.64rem;text-transform:uppercase;letter-spacing:.6px;color:var(--muted2);margin-top:5px;font-family:var(--mono)}
+.ks{font-size:.62rem;color:var(--muted2);margin-top:3px;opacity:.7}
+
+/* ── GRIDS ── */
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.glw{display:grid;grid-template-columns:1.5fr 1fr;gap:14px}
+.mb{margin-bottom:14px}
+
+/* ── CALLOUT ── */
+.callout{border-radius:8px;padding:10px 14px;font-size:.75rem;line-height:1.55;display:flex;gap:9px;align-items:flex-start;margin-bottom:12px}
+.callout:last-child{margin-bottom:0}
+.callout.amber{background:rgba(245,158,11,.08);border-left:2px solid var(--s2);color:#FCD34D}
+.callout.teal{background:var(--teal-glow);border-left:2px solid var(--teal);color:#6EE7E7}
+.callout.red{background:rgba(239,68,68,.08);border-left:2px solid var(--s4);color:#FCA5A5}
+.callout.blue{background:rgba(59,130,246,.08);border-left:2px solid #3B82F6;color:#93C5FD}
+.callout-icon{font-size:.9rem;flex-shrink:0;margin-top:1px}
+
+/* ── MODEL COMPARISON ── */
+.mc-row{display:flex;align-items:center;gap:10px;padding:10px 13px;border-radius:8px;margin-bottom:6px;border:1px solid var(--border);background:var(--card2);transition:background .15s}
+.mc-row:last-child{margin-bottom:0}
+.mc-row.best{background:rgba(13,180,160,.08);border-color:rgba(13,180,160,.3)}
+.mc-name{font-size:.8rem;font-weight:600;min-width:155px}
+.mc-bar-bg{flex:1;background:var(--bg);border-radius:999px;height:8px;overflow:hidden}
+.mc-bar-fill{height:100%;border-radius:999px;transition:width 1s ease}
+.mc-acc{font-size:.75rem;font-weight:700;font-family:var(--mono);min-width:42px;text-align:right}
+.mc-cv{font-size:.64rem;color:var(--muted2);font-family:var(--mono);min-width:62px;text-align:right}
+.best-tag{font-size:.58rem;font-weight:700;background:rgba(13,180,160,.2);color:var(--teal);padding:2px 6px;border-radius:3px;margin-left:6px;font-family:var(--mono)}
+
+/* ── PER CLASS METRICS ── */
+.pc-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border2)}
+.pc-row:last-child{border-bottom:none}
+.pc-stage{font-size:.78rem;font-weight:700;font-family:var(--mono);min-width:58px}
+.pc-bars{flex:1;display:flex;flex-direction:column;gap:5px}
+.pc-metric{display:flex;align-items:center;gap:8px}
+.pc-label{font-size:.58rem;font-family:var(--mono);text-transform:uppercase;letter-spacing:.3px;color:var(--muted2);min-width:56px}
+.pc-bar-bg{flex:1;background:var(--bg);border-radius:999px;height:5px;overflow:hidden}
+.pc-bar-fill{height:100%;border-radius:999px;transition:width 1s ease}
+.pc-val{font-size:.66rem;font-weight:700;font-family:var(--mono);min-width:34px;text-align:right}
+
+/* ── CONFUSION MATRIX ── */
+.cm-wrap{overflow-x:auto}
+.cm-table{width:100%;border-collapse:collapse;font-size:.76rem}
+.cm-table th{padding:9px 10px;text-align:center;font-weight:600;color:var(--muted2);font-size:.6rem;font-family:var(--mono);text-transform:uppercase;letter-spacing:.5px}
+.cm-table td{padding:11px 10px;text-align:center;border-radius:6px;font-weight:700;font-family:var(--mono);font-size:.84rem}
+.cm-diag{background:var(--teal);color:#fff}
+.cm-diag-low{background:rgba(13,180,160,.3);color:#6EE7E7}
+.cm-off-high{background:rgba(239,68,68,.15);color:#FCA5A5}
+.cm-off{background:var(--card2);color:var(--muted2)}
+.cm-zero{background:transparent;color:var(--muted2);opacity:.4}
+.cm-row-label{font-weight:600;font-size:.68rem;font-family:var(--mono);text-align:left!important;padding-left:14px!important}
+
+/* ── FEATURE IMPORTANCE ── */
+.fi-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border2)}
+.fi-row:last-child{border-bottom:none}
+.fi-rank{font-size:.6rem;font-weight:700;color:var(--muted2);min-width:18px;text-align:center;font-family:var(--mono)}
+.fi-name{font-size:.76rem;font-weight:500;min-width:150px}
+.fi-bar-bg{flex:1;background:var(--bg);border-radius:999px;height:7px;overflow:hidden}
+.fi-bar-fill{height:100%;border-radius:999px;background:linear-gradient(90deg,var(--teal),#3B82F6);transition:width 1s ease}
+.fi-pct{font-size:.68rem;font-weight:700;font-family:var(--mono);min-width:36px;text-align:right;color:var(--teal)}
+
+/* ── CHART ── */
+.ch{position:relative}
+.h220{height:220px}.h260{height:260px}.h300{height:300px}
+
+/* ── FOOTER ── */
+footer{background:var(--surface);border-top:1px solid var(--border);padding:14px 20px;flex-shrink:0;display:flex;justify-content:space-between;align-items:center;font-size:.68rem}
+.footer-brand{font-weight:600;color:var(--teal)}
+.footer-info{color:var(--muted2)}
+
+@media(max-width:900px){.kpi-strip{grid-template-columns:repeat(2,1fr)}.g2,.glw{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <div><span class="live-dot"></span>System Online &nbsp;·&nbsp; 🏥 Sharnbasva University Hospital — Clinical AI Suite</div>
+  <span>HepatoAI v3.0 · Model Analytics</span>
+</div>
+
+<!-- HEADER -->
+<header>
+  <div class="hdr">
+    <a href="/" class="brand">
+      <div class="brand-icon">🫀</div>
+      <div><div class="brand-name">HepatoAI</div><div class="brand-sub">Clinical Decision Support · Liver Disease Unit</div></div>
+    </a>
+    <nav>
+      <a href="/" class="nav-link">Patient Database</a>
+      <a href="/manual" class="nav-link">Manual Entry</a>
+      <a href="/analytics" class="nav-link active">Model Analytics</a>
+      <a href="/manual" class="nav-btn">+ New Assessment</a>
+    </nav>
+  </div>
+</header>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-inner">
+    <div>
+      <div class="hero-tag">📊 Model Performance Dashboard</div>
+      <h1 class="hero-title">Model <span>Analytics</span></h1>
+      <p class="hero-desc">Comprehensive evaluation of the Random Forest classifier — accuracy metrics, confusion matrix, feature importances, and multi-model comparison. All metrics computed using cross-validation.</p>
+    </div>
+    <div class="hero-stats">
+      <div class="hstat">
+        <span class="hstat-val" style="color:var(--teal)">{{ overall_accuracy }}%</span>
+        <span class="hstat-lbl">Training Acc.</span>
+      </div>
+      <div class="hstat">
+        <span class="hstat-val" style="color:var(--s1)">{{ cv_mean }}%</span>
+        <span class="hstat-lbl">CV Accuracy</span>
+      </div>
+      <div class="hstat">
+        <span class="hstat-val" style="color:var(--muted)">±{{ cv_std }}%</span>
+        <span class="hstat-lbl">CV Std Dev</span>
+      </div>
+      <div class="hstat">
+        <span class="hstat-val" style="color:var(--text)">412</span>
+        <span class="hstat-lbl">Patients</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- MAIN -->
+<main>
+
+  <!-- KPI Strip -->
+  <div class="kpi-strip mb">
+    {% for cls in per_class %}
+    <div class="kpi" style="--kc:{{ cls.color }}">
+      <div class="kv">{{ cls.f1 }}%</div>
+      <div class="kl">Stage {{ cls.stage }} F1-Score</div>
+      <div class="ks">P: {{ cls.precision }}%  R: {{ cls.recall }}%</div>
+    </div>
+    {% endfor %}
+  </div>
+
+  <!-- Context callout -->
+  <div class="callout amber mb">
+    <span class="callout-icon">⚠️</span>
+    <span><strong>Why ~{{ cv_mean }}% cross-validated accuracy?</strong> All 6 algorithms tested achieve 42–53% CV accuracy. This is a <strong>dataset size limitation</strong> — only 412 patients with Stage 1 having just 21 samples (5% of data). Random Forest still provides the best clinically useful predictions for Stages 3 and 4 where intervention matters most.</span>
+  </div>
+
+  <!-- Model Comparison + Per-Class Metrics -->
+  <div class="glw mb">
+
+    <div class="card">
+      <div class="card-title"><span class="ci">🏆</span> Multi-Model Benchmark <span class="card-badge">Cross-Validated</span></div>
+      {% for m in model_comparison %}
+      <div class="mc-row {{ 'best' if m.highlight else '' }}">
+        <span class="mc-name">
+          {{ m.name }}
+          {% if m.highlight %}<span class="best-tag">BEST</span>{% endif %}
+        </span>
+        <div class="mc-bar-bg">
+          <div class="mc-bar-fill" style="background:{{ '#0DB4A0' if m.highlight else '#2E4057' }};width:{{ m.cv }}%"></div>
+        </div>
+        <span class="mc-acc" style="color:{{ 'var(--teal)' if m.highlight else 'var(--muted)' }}">{{ m.cv }}%</span>
+        <span class="mc-cv">CV: {{ m.cv }}%</span>
+      </div>
+      {% endfor %}
+      <p style="font-size:.62rem;color:var(--muted2);margin-top:11px;padding-top:9px;border-top:1px solid var(--border2)">Training accuracy for tree-based models is ~100% due to dataset memorisation. CV accuracy is the honest generalisation measure.</p>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span class="ci">📐</span> Per-Stage Precision · Recall · F1</div>
+      {% for cls in per_class %}
+      <div class="pc-row">
+        <span class="pc-stage" style="color:{{ cls.color }}">Stage {{ cls.stage }}</span>
+        <div class="pc-bars">
+          {% for metric, val in [('Precision', cls.precision), ('Recall', cls.recall), ('F1-Score', cls.f1)] %}
+          <div class="pc-metric">
+            <span class="pc-label">{{ metric }}</span>
+            <div class="pc-bar-bg">
+              <div class="pc-bar-fill" style="width:{{ val }}%;background:{{ cls.color }}"></div>
+            </div>
+            <span class="pc-val">{{ val }}%</span>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+
+  </div>
+
+  <!-- Confusion Matrix + Model Bar Chart -->
+  <div class="g2 mb">
+
+    <div class="card">
+      <div class="card-title"><span class="ci">🔢</span> Confusion Matrix <span class="card-badge">Rows=Actual · Cols=Predicted</span></div>
+      <p style="font-size:.7rem;color:var(--muted);margin-bottom:14px">Teal diagonal = correct predictions. Values off-diagonal show misclassifications. Stage 1 has the most errors due to only 21 training samples.</p>
+      <div class="cm-wrap">
+        <table class="cm-table">
+          <thead>
+            <tr>
+              <th style="text-align:left">Actual ╲ Pred</th>
+              {% for name in label_names %}
+              <th>{{ name }}</th>
+              {% endfor %}
+            </tr>
+          </thead>
+          <tbody>
+            {% for i in range(confusion_matrix|length) %}
+            <tr>
+              <td class="cm-row-label" style="color:{{ per_class[i].color }}">{{ label_names[i] }}</td>
+              {% for j in range(confusion_matrix[i]|length) %}
+              {% set val = confusion_matrix[i][j] %}
+              <td class="
+                {% if i == j %}
+                  {% if val > 20 %}cm-diag{% elif val > 5 %}cm-diag-low{% else %}cm-diag-low{% endif %}
+                {% elif val > 10 %}cm-off-high
+                {% elif val > 0 %}cm-off
+                {% else %}cm-zero{% endif %}">
+                {{ val }}
+              </td>
+              {% endfor %}
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      <div class="callout teal" style="margin-top:14px">
+        <span class="callout-icon">💡</span>
+        <span>Stage 3 (155 patients) and Stage 4 (144 patients) are predicted most reliably. Stage 1 (21 patients) is almost never correctly predicted due to extreme class imbalance.</span>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span class="ci">📊</span> Model Accuracy Comparison Chart</div>
+      <div class="ch h260"><canvas id="model-chart"></canvas></div>
+      <div class="callout blue" style="margin-top:14px">
+        <span class="callout-icon">ℹ️</span>
+        <span>Random Forest outperforms all other models. The gap between training accuracy ({{ overall_accuracy }}%) and CV accuracy ({{ cv_mean }}%) reveals overfitting on this small dataset.</span>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Feature Importance + Doughnut -->
+  <div class="g2 mb">
+
+    <div class="card">
+      <div class="card-title"><span class="ci">⚡</span> Feature Importance Ranking <span class="card-badge">Gini Impurity</span></div>
+      <p style="font-size:.7rem;color:var(--muted);margin-bottom:14px">Importance scores from the 200-tree Random Forest. Higher = more influential in predicting cirrhosis stage.</p>
+      {% for fi in feature_importances %}
+      <div class="fi-row">
+        <span class="fi-rank">{{ loop.index }}</span>
+        <span class="fi-name">{{ fi.name }}</span>
+        <div class="fi-bar-bg">
+          <div class="fi-bar-fill" style="width:{{ (fi.pct / feature_importances[0].pct * 100) | round(1) }}%"></div>
+        </div>
+        <span class="fi-pct">{{ fi.pct }}%</span>
+      </div>
+      {% endfor %}
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:14px">
+      <div class="card">
+        <div class="card-title"><span class="ci">🍩</span> Stage Class Distribution</div>
+        <div class="ch h220"><canvas id="dist-chart"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-title"><span class="ci">📈</span> Feature Importance Chart</div>
+        <div class="ch h220"><canvas id="fi-chart"></canvas></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Bottom insight cards -->
+  <div class="g2 mb">
+    <div class="card">
+      <div class="card-title"><span class="ci">🔬</span> Clinical Interpretation of Results</div>
+      <div class="callout teal"><span class="callout-icon">🟢</span><span><strong>Stage 4 Prediction (F1 {{ per_class[3].f1 }}%):</strong> The model is most reliable for end-stage cirrhosis detection — the clinically most urgent case. High bilirubin, low albumin, and prolonged prothrombin time are strong predictors.</span></div>
+      <div class="callout amber"><span class="callout-icon">🟡</span><span><strong>Stage 3 Prediction (F1 {{ per_class[2].f1 }}%):</strong> Advanced fibrosis is detected reasonably well. Alkaline phosphatase and copper levels are key discriminators at this stage.</span></div>
+      <div class="callout red"><span class="callout-icon">🔴</span><span><strong>Stage 1 Prediction (F1 {{ per_class[0].f1 }}%):</strong> Early fibrosis is nearly impossible to detect with only 21 training samples. A larger dataset with 500+ Stage 1 patients would dramatically improve early detection.</span></div>
+    </div>
+    <div class="card">
+      <div class="card-title"><span class="ci">💡</span> Model Strengths &amp; Limitations</div>
+      <div class="callout teal"><span class="callout-icon">✅</span><span><strong>Strength:</strong> Random Forest handles mixed data types (numeric + categorical), is robust to outliers in lab values, and provides built-in feature importance for clinical interpretability.</span></div>
+      <div class="callout teal"><span class="callout-icon">✅</span><span><strong>Strength:</strong> Ensemble of 200 trees reduces variance from individual overfitted trees. More robust than a single Decision Tree or Logistic Regression on this small dataset.</span></div>
+      <div class="callout amber"><span class="callout-icon">⚠️</span><span><strong>Limitation:</strong> 412 patients is a small clinical dataset. Cross-validated accuracy of {{ cv_mean }}% is honest and expected. A multi-centre dataset (5,000+ patients) would significantly improve all metrics.</span></div>
+    </div>
+  </div>
+
+</main>
+
+<footer>
+  <span class="footer-brand">🫀 HepatoAI — Model Analytics</span>
+  <span class="footer-info">Final Year Project · B.E. CSE · Sharnbasva University, Kalaburagi · 2025–26</span>
+</footer>
+
+<script>
+Chart.defaults.font.family = "'IBM Plex Sans', sans-serif";
+Chart.defaults.color = '#4A6A84';
+const GRID_COLOR = 'rgba(255,255,255,.05)';
+
+const MODEL_DATA = {{ model_comparison | tojson }};
+const FI_DATA    = {{ feature_importances | tojson }};
+const PC_DATA    = {{ per_class | tojson }};
+
+window.addEventListener('load', () => {
+
+  // Animate all progress bars
+  setTimeout(() => {
+    document.querySelectorAll('.mc-bar-fill,.pc-bar-fill,.fi-bar-fill').forEach(el => {
+      const w = el.style.width;
+      el.style.width = '0';
+      requestAnimationFrame(() => {
+        setTimeout(() => { el.style.width = w; }, 50);
+      });
+    });
+  }, 100);
+
+  // Model comparison bar chart
+  new Chart(document.getElementById('model-chart'), {
+    type: 'bar',
+    data: {
+      labels: MODEL_DATA.map(m => m.name),
+      datasets: [
+        {
+          label: 'CV Accuracy %',
+          data: MODEL_DATA.map(m => m.cv),
+          backgroundColor: MODEL_DATA.map((m,i) => i===0 ? 'rgba(13,180,160,.8)' : 'rgba(46,64,87,.9)'),
+          borderColor:     MODEL_DATA.map((m,i) => i===0 ? '#0DB4A0' : '#2E4057'),
+          borderWidth: 2,
+          borderRadius: 7,
+          borderSkipped: false,
+        },
+        {
+          label: 'Training Accuracy %',
+          data: MODEL_DATA.map((m,i) => i===0 ? {{ overall_accuracy }} : m.accuracy),
+          backgroundColor: 'rgba(255,255,255,.05)',
+          borderColor: 'rgba(255,255,255,.15)',
+          borderWidth: 1.5,
+          borderRadius: 7,
+          borderSkipped: false,
+          borderDash: [4,4],
+        }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { position: 'bottom', labels: { font: { size: 10 }, padding: 12, color: '#7A9AB8' } }
+      },
+      scales: {
+        x: { grid: { display: false }, ticks: { color: '#4A6A84', font: { size: 9 } } },
+        y: { grid: { color: GRID_COLOR }, min: 0, max: 105, ticks: { callback: v => v + '%', color: '#4A6A84', font: { size: 9 } } }
+      },
+      animation: { duration: 1000, easing: 'easeOutQuart' }
+    }
+  });
+
+  // Stage distribution doughnut
+  new Chart(document.getElementById('dist-chart'), {
+    type: 'doughnut',
+    data: {
+      labels: ['Stage 1 (21)', 'Stage 2 (92)', 'Stage 3 (155)', 'Stage 4 (144)'],
+      datasets: [{
+        data: [21, 92, 155, 144],
+        backgroundColor: ['#10B981', '#F59E0B', '#F97316', '#EF4444'],
+        borderWidth: 3, borderColor: '#1C2D40',
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      cutout: '60%',
+      plugins: {
+        legend: { position: 'bottom', labels: { font: { size: 9 }, padding: 10, color: '#7A9AB8' } }
+      },
+      animation: { animateRotate: true, duration: 1000 }
+    }
+  });
+
+  // Feature importance horizontal bar
+  new Chart(document.getElementById('fi-chart'), {
+    type: 'bar',
+    data: {
+      labels: FI_DATA.map(f => f.name),
+      datasets: [{
+        label: 'Importance %',
+        data: FI_DATA.map(f => f.pct),
+        backgroundColor: FI_DATA.map((_, i) =>
+          i < 3 ? 'rgba(13,180,160,.8)' :
+          i < 6 ? 'rgba(13,180,160,.4)' :
+                  'rgba(46,64,87,.9)'),
+        borderRadius: 5,
+        borderSkipped: false,
+      }]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { grid: { color: GRID_COLOR }, ticks: { callback: v => v + '%', color: '#4A6A84', font: { size: 9 } } },
+        y: { grid: { display: false }, ticks: { color: '#7A9AB8', font: { size: 9 } } }
+      },
+      animation: { duration: 1000, easing: 'easeOutQuart' }
+    }
+  });
+
+});
+</script>
+</body>
+</html>

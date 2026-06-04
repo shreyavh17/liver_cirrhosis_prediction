@@ -1,0 +1,7 @@
+Model,Accuracy
+Gradient Boosting,53.01
+Decision Tree,50.6
+SVM,49.4
+Random Forest,49.4
+Logistic Regression,44.58
+KNN,43.37

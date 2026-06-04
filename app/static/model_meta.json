@@ -1,0 +1,61 @@
+{
+  "test_accuracy": 53.4,
+  "cv_mean": 53.4,
+  "cv_std": 3.9,
+  "per_class": [
+    {
+      "stage": 1,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0
+    },
+    {
+      "stage": 2,
+      "precision": 38.5,
+      "recall": 21.7,
+      "f1": 27.8
+    },
+    {
+      "stage": 3,
+      "precision": 49.3,
+      "recall": 63.9,
+      "f1": 55.6
+    },
+    {
+      "stage": 4,
+      "precision": 63.5,
+      "recall": 70.1,
+      "f1": 66.7
+    }
+  ],
+  "confusion_matrix": [
+    [
+      0,
+      6,
+      14,
+      1
+    ],
+    [
+      0,
+      20,
+      50,
+      22
+    ],
+    [
+      0,
+      21,
+      99,
+      35
+    ],
+    [
+      0,
+      5,
+      38,
+      101
+    ]
+  ],
+  "train_size": 412,
+  "test_size": 412,
+  "n_estimators": 200,
+  "n_features": 27
+}

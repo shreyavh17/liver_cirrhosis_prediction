@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Liver Cirrhosis Prediction System — HepatoAI</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* ══════════════════════════════════════════════════════
+   HEPATOAI — CLINICAL DECISION SUPPORT SYSTEM
+   Aesthetic: Refined Medical / Precision Clinical
+   ══════════════════════════════════════════════════════ */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root{
+  --cream:    #F8F6F1;
+  --white:    #FFFFFF;
+  --slate:    #1E2A3A;
+  --slate-mid:#2D3F55;
+  --blue:     #1D6FA4;
+  --blue-lt:  #E8F4FD;
+  --blue-dim: #2980B9;
+  --red:      #C0392B;
+  --green:    #16A085;
+  --border:   #DDE3EA;
+  --text:     #1E2A3A;
+  --muted:    #6B7A8D;
+  --radius:   12px;
+  --shadow-sm:0 1px 4px rgba(0,0,0,0.08);
+  --shadow:   0 4px 20px rgba(0,0,0,0.10);
+  --shadow-lg:0 8px 40px rgba(0,0,0,0.13);
+}
+
+html{font-size:15px;scroll-behavior:smooth}
+body{
+  font-family:'DM Sans',sans-serif;
+  background:var(--cream);
+  color:var(--text);
+  min-height:100vh;
+  display:flex;
+  flex-direction:column;
+}
+
+/* ── TOPBAR ── */
+.topbar{
+  background:var(--slate);
+  color:#A8BBCC;
+  font-size:0.72rem;
+  letter-spacing:0.5px;
+  padding:7px 32px;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+}
+.topbar-left{display:flex;gap:24px}
+.topbar span{display:flex;align-items:center;gap:5px}
+.dot{width:6px;height:6px;border-radius:50%;background:#10B981;flex-shrink:0;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.4}}
+
+/* ── HEADER ── */
+header{
+  background:var(--white);
+  border-bottom:1px solid var(--border);
+  position:sticky;top:0;z-index:100;
+  box-shadow:var(--shadow-sm);
+}
+.header-inner{
+  max-width:1180px;margin:0 auto;
+  padding:0 32px;height:68px;
+  display:flex;align-items:center;justify-content:space-between;
+}
+.brand{display:flex;align-items:center;gap:14px}
+.brand-icon{
+  width:42px;height:42px;
+  background:linear-gradient(135deg,var(--blue),var(--slate));
+  border-radius:10px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:20px;
+}
+.brand-text .name{
+  font-size:1.15rem;font-weight:700;
+  color:var(--slate);letter-spacing:-0.3px;
+  display:block;
+}
+.brand-text .sub{
+  font-size:0.72rem;color:var(--muted);
+  font-family:'DM Mono',monospace;
+  display:block;margin-top:1px;
+}
+nav{display:flex;align-items:center;gap:6px}
+.nav-link{
+  padding:8px 18px;border-radius:8px;
+  font-size:0.85rem;font-weight:500;
+  color:var(--muted);text-decoration:none;
+  transition:all 0.18s;
+}
+.nav-link:hover{background:#F0F4F8;color:var(--slate)}
+.nav-link.active{background:var(--blue-lt);color:var(--blue);font-weight:600}
+.nav-btn{
+  background:var(--blue);color:#fff;
+  padding:8px 20px;border-radius:8px;
+  font-size:0.85rem;font-weight:600;
+  text-decoration:none;
+  transition:background 0.18s;
+}
+.nav-btn:hover{background:var(--blue-dim)}
+
+/* ── HERO ── */
+.hero{
+  background:linear-gradient(135deg,var(--slate) 0%,var(--slate-mid) 100%);
+  padding:52px 32px 48px;
+  position:relative;overflow:hidden;
+}
+.hero::before{
+  content:'';position:absolute;top:-60px;right:-60px;
+  width:300px;height:300px;
+  border-radius:50%;
+  background:rgba(29,111,164,0.15);
+}
+.hero::after{
+  content:'';position:absolute;bottom:-80px;left:20%;
+  width:200px;height:200px;
+  border-radius:50%;
+  background:rgba(255,255,255,0.04);
+}
+.hero-inner{
+  max-width:1180px;margin:0 auto;
+  display:flex;align-items:center;justify-content:space-between;
+  gap:40px;position:relative;z-index:1;
+}
+.hero-left{}
+.hero-tag{
+  display:inline-flex;align-items:center;gap:8px;
+  background:rgba(29,111,164,0.3);
+  border:1px solid rgba(29,111,164,0.5);
+  color:#7EC8E3;
+  font-size:0.72rem;font-weight:600;letter-spacing:1px;
+  text-transform:uppercase;
+  padding:5px 14px;border-radius:999px;
+  margin-bottom:18px;
+}
+.hero h1{
+  font-size:2.1rem;font-weight:700;
+  color:#fff;line-height:1.25;
+  letter-spacing:-0.5px;
+  margin-bottom:14px;
+}
+.hero h1 span{color:#7EC8E3}
+.hero-desc{
+  color:#A8BBCC;font-size:0.95rem;
+  line-height:1.7;max-width:480px;
+  margin-bottom:28px;
+}
+.hero-stats{display:flex;gap:28px;flex-wrap:wrap}
+.stat{
+  background:rgba(255,255,255,0.07);
+  border:1px solid rgba(255,255,255,0.12);
+  border-radius:10px;padding:12px 20px;
+  text-align:center;min-width:90px;
+}
+.stat-val{
+  display:block;font-size:1.4rem;font-weight:700;
+  color:#fff;line-height:1.1;
+}
+.stat-lbl{
+  display:block;font-size:0.7rem;
+  color:#7EC8E3;letter-spacing:0.5px;
+  text-transform:uppercase;margin-top:3px;
+}
+.hero-right{
+  display:flex;flex-direction:column;gap:10px;min-width:220px;
+}
+.model-card{
+  background:rgba(255,255,255,0.08);
+  border:1px solid rgba(255,255,255,0.15);
+  border-radius:12px;padding:16px 20px;
+}
+.model-card-title{
+  font-size:0.7rem;font-weight:600;
+  color:#7EC8E3;text-transform:uppercase;letter-spacing:1px;
+  margin-bottom:10px;
+}
+.model-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.model-row:last-child{margin-bottom:0}
+.model-key{font-size:0.78rem;color:#A8BBCC}
+.model-val{font-size:0.78rem;font-weight:600;color:#fff;font-family:'DM Mono',monospace}
+
+/* ── MAIN LAYOUT ── */
+.main{
+  max-width:1180px;margin:0 auto;
+  padding:36px 32px 80px;
+  width:100%;flex:1;
+}
+
+/* ── ERROR ── */
+.alert-error{
+  background:#FEF2F2;border:1px solid #FCA5A5;
+  color:#991B1B;padding:14px 18px;border-radius:10px;
+  margin-bottom:24px;font-size:0.88rem;
+}
+
+/* ── FORM CARD ── */
+.form-card{
+  background:var(--white);
+  border:1px solid var(--border);
+  border-radius:18px;
+  box-shadow:var(--shadow);
+  overflow:hidden;
+}
+
+/* ── SECTION ── */
+.form-section{
+  padding:30px 36px;
+  border-bottom:1px solid var(--border);
+}
+.form-section:last-of-type{border-bottom:none}
+.section-head{
+  display:flex;align-items:center;gap:14px;
+  margin-bottom:26px;
+}
+.section-num{
+  width:34px;height:34px;border-radius:8px;
+  background:var(--blue);color:#fff;
+  font-size:0.85rem;font-weight:700;
+  display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;
+}
+.section-info h2{
+  font-size:1rem;font-weight:700;color:var(--slate);
+}
+.section-info p{font-size:0.78rem;color:var(--muted);margin-top:2px}
+
+/* ── GRID ── */
+.grid{display:grid;gap:20px}
+.g3{grid-template-columns:repeat(3,1fr)}
+.g4{grid-template-columns:repeat(4,1fr)}
+
+/* ── FIELD ── */
+.field{display:flex;flex-direction:column;gap:6px}
+.field label{
+  font-size:0.75rem;font-weight:600;
+  color:var(--muted);text-transform:uppercase;letter-spacing:0.5px;
+}
+.req{color:var(--red)}
+.field input,.field select{
+  background:#F7F9FC;
+  border:1.5px solid var(--border);
+  border-radius:9px;
+  color:var(--text);
+  font-family:'DM Sans',sans-serif;
+  font-size:0.95rem;
+  padding:10px 14px;
+  width:100%;
+  transition:border-color 0.18s,box-shadow 0.18s,background 0.18s;
+  -webkit-appearance:none;appearance:none;
+}
+.field input:focus,.field select:focus{
+  outline:none;
+  border-color:var(--blue);
+  background:var(--white);
+  box-shadow:0 0 0 3px rgba(29,111,164,0.10);
+}
+.field input::placeholder{color:#B0BEC9}
+.ref{
+  font-size:0.7rem;color:var(--muted);
+  display:flex;align-items:center;gap:4px;
+}
+.ref-normal{color:#10B981;font-weight:600}
+
+/* ── SUBMIT AREA ── */
+.form-footer{
+  padding:28px 36px;
+  background:#F7F9FC;
+  border-top:1px solid var(--border);
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:16px;
+}
+.btn-row{display:flex;gap:12px;align-items:center;flex-wrap:wrap;justify-content:center}
+.btn-primary{
+  display:inline-flex;align-items:center;gap:10px;
+  background:linear-gradient(135deg,var(--blue),var(--blue-dim));
+  color:#fff;
+  font-family:'DM Sans',sans-serif;
+  font-size:1rem;font-weight:700;
+  padding:14px 44px;
+  border:none;border-radius:11px;
+  cursor:pointer;letter-spacing:0.2px;
+  box-shadow:0 4px 18px rgba(29,111,164,0.35);
+  transition:all 0.2s;
+}
+.btn-primary:hover{transform:translateY(-2px);box-shadow:0 6px 24px rgba(29,111,164,0.45)}
+.btn-primary:disabled{opacity:0.6;cursor:not-allowed;transform:none}
+.btn-secondary{
+  background:transparent;
+  border:1.5px solid var(--border);
+  color:var(--muted);
+  font-family:'DM Sans',sans-serif;
+  font-size:0.88rem;
+  padding:12px 24px;border-radius:10px;
+  cursor:pointer;transition:all 0.18s;
+}
+.btn-secondary:hover{border-color:var(--muted);color:var(--slate)}
+.form-disclaimer{
+  font-size:0.73rem;color:var(--muted);text-align:center;
+  max-width:520px;line-height:1.6;
+}
+
+/* ── ABOUT PANEL ── */
+.about-panel{
+  background:var(--white);border:1px solid var(--border);
+  border-radius:18px;padding:36px;margin-top:28px;
+  box-shadow:var(--shadow);
+}
+.about-panel h2{font-size:1.1rem;font-weight:700;color:var(--blue);margin-bottom:10px}
+.about-panel p{color:var(--muted);line-height:1.75;font-size:0.93rem;margin-bottom:24px}
+.about-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.about-item{
+  background:#F7F9FC;border:1px solid var(--border);
+  border-radius:10px;padding:14px 16px;
+}
+.about-item strong{display:block;font-size:0.72rem;text-transform:uppercase;letter-spacing:0.5px;color:var(--muted);margin-bottom:4px}
+.about-item span{font-size:0.88rem;font-weight:600;color:var(--slate)}
+
+/* ── FOOTER ── */
+footer{
+  background:var(--slate);
+  padding:24px 32px;
+  display:flex;justify-content:space-between;align-items:center;
+  flex-wrap:wrap;gap:12px;
+}
+.footer-brand{font-size:0.82rem;font-weight:600;color:#7EC8E3}
+.footer-info{font-size:0.75rem;color:#6B7A8D;text-align:right}
+
+/* ── RESPONSIVE ── */
+@media(max-width:960px){
+  .g3,.g4{grid-template-columns:repeat(2,1fr)}
+  .hero-inner{flex-direction:column}
+  .hero-right{min-width:unset;width:100%;flex-direction:row}
+}
+@media(max-width:600px){
+  .g3,.g4,.about-grid{grid-template-columns:1fr}
+  .form-section{padding:22px 20px}
+  .hero h1{font-size:1.6rem}
+  .topbar{display:none}
+  .hero-stats{gap:12px}
+}
+</style>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <div class="topbar-left">
+    <span><span class="dot"></span> System Online</span>
+    <span>🏥 Sharnbasva University Hospital — Clinical AI Suite</span>
+    <span>🔒 Secure Local Deployment</span>
+  </div>
+  <div>HepatoAI v1.0 &nbsp;|&nbsp; Random Forest Classifier</div>
+</div>
+
+<!-- HEADER -->
+<header>
+  <div class="header-inner">
+    <div class="brand">
+      <div class="brand-icon">🫀</div>
+      <div class="brand-text">
+        <span class="name">HepatoAI</span>
+        <span class="sub">CLINICAL DECISION SUPPORT · LIVER DISEASE UNIT</span>
+      </div>
+    </div>
+    <nav>
+      <a href="/" class="nav-link active">Patient Assessment</a>
+      <a href="/about" class="nav-link">About System</a>
+      <a href="/" class="nav-btn">+ New Assessment</a>
+    </nav>
+  </div>
+</header>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-inner">
+    <div class="hero-left">
+      <div class="hero-tag">🧬 AI-Powered Hepatology Tool</div>
+      <h1>Liver Cirrhosis<br/><span>Stage Prediction</span></h1>
+      <p class="hero-desc">
+        Enter the patient's clinical laboratory values below. The Random Forest
+        ensemble model analyses 27 clinical parameters to predict the cirrhosis
+        stage and provide actionable clinical guidance.
+      </p>
+      <div class="hero-stats">
+        <div class="stat"><span class="stat-val">412</span><span class="stat-lbl">Patients Trained</span></div>
+        <div class="stat"><span class="stat-val">27</span><span class="stat-lbl">Features Used</span></div>
+        <div class="stat"><span class="stat-val">6</span><span class="stat-lbl">Models Compared</span></div>
+        <div class="stat"><span class="stat-val">4</span><span class="stat-lbl">Stages Classified</span></div>
+      </div>
+    </div>
+    <div class="hero-right">
+      <div class="model-card">
+        <div class="model-card-title">Model Information</div>
+        <div class="model-row"><span class="model-key">Algorithm</span><span class="model-val">Random Forest</span></div>
+        <div class="model-row"><span class="model-key">Trees</span><span class="model-val">200</span></div>
+        <div class="model-row"><span class="model-key">Split</span><span class="model-val">80% / 20%</span></div>
+        <div class="model-row"><span class="model-key">Strategy</span><span class="model-val">Stratified</span></div>
+        <div class="model-row"><span class="model-key">Dataset</span><span class="model-val">UCI Cirrhosis</span></div>
+      </div>
+      <div class="model-card">
+        <div class="model-card-title">Classification Target</div>
+        <div class="model-row"><span class="model-key">Stage 1</span><span class="model-val" style="color:#10B981">Early Fibrosis</span></div>
+        <div class="model-row"><span class="model-key">Stage 2</span><span class="model-val" style="color:#F59E0B">Moderate Fibrosis</span></div>
+        <div class="model-row"><span class="model-key">Stage 3</span><span class="model-val" style="color:#F97316">Advanced Fibrosis</span></div>
+        <div class="model-row"><span class="model-key">Stage 4</span><span class="model-val" style="color:#EF4444">Severe Cirrhosis</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- MAIN -->
+<main class="main">
+
+  {% if error %}
+  <div class="alert-error">⚠️ <strong>Error:</strong> {{ error }}</div>
+  {% endif %}
+
+  <form action="/predict" method="POST" class="form-card" id="form">
+
+    <!-- SECTION 1: DEMOGRAPHICS -->
+    <div class="form-section">
+      <div class="section-head">
+        <div class="section-num">1</div>
+        <div class="section-info">
+          <h2>Patient Demographics</h2>
+          <p>Basic identification and background information</p>
+        </div>
+      </div>
+      <div class="grid g3">
+        <div class="field">
+          <label>Age (Years) <span class="req">*</span></label>
+          <input type="number" name="Age_Years" placeholder="e.g. 52" min="1" max="120" step="0.1" required/>
+          <span class="ref">Patient age in years</span>
+        </div>
+        <div class="field">
+          <label>Sex <span class="req">*</span></label>
+          <select name="Sex" required>
+            <option value="F">Female</option>
+            <option value="M">Male</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Patient Status</label>
+          <select name="Status">
+            <option value="C">C — Censored (alive, in study)</option>
+            <option value="CL">CL — Censored (liver transplant)</option>
+            <option value="D">D — Deceased</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>Drug / Treatment</label>
+          <select name="Drug">
+            <option value="D-penicillamine">D-penicillamine</option>
+            <option value="Placebo">Placebo</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <!-- SECTION 2: LIVER FUNCTION TESTS -->
+    <div class="form-section">
+      <div class="section-head">
+        <div class="section-num">2</div>
+        <div class="section-info">
+          <h2>Liver Function Tests (LFT)</h2>
+          <p>Key laboratory values from blood biochemistry panel</p>
+        </div>
+      </div>
+      <div class="grid g3">
+        <div class="field">
+          <label>Bilirubin (mg/dL) <span class="req">*</span></label>
+          <input type="number" name="Bilirubin" placeholder="e.g. 2.1" step="0.01" min="0" required/>
+          <span class="ref">Normal: <span class="ref-normal">0.1 – 1.2</span></span>
+        </div>
+        <div class="field">
+          <label>Albumin (g/dL) <span class="req">*</span></label>
+          <input type="number" name="Albumin" placeholder="e.g. 3.5" step="0.01" min="0" required/>
+          <span class="ref">Normal: <span class="ref-normal">3.5 – 5.0</span></span>
+        </div>
+        <div class="field">
+          <label>Prothrombin Time (s) <span class="req">*</span></label>
+          <input type="number" name="Prothrombin" placeholder="e.g. 11.2" step="0.1" min="0" required/>
+          <span class="ref">Normal: <span class="ref-normal">9.5 – 13.5</span></span>
+        </div>
+        <div class="field">
+          <label>Copper (µg/day)</label>
+          <input type="number" name="Copper" placeholder="e.g. 80" step="1" min="0"/>
+          <span class="ref">Normal: <span class="ref-normal">3 – 35</span></span>
+        </div>
+        <div class="field">
+          <label>Alkaline Phosphatase (U/L)</label>
+          <input type="number" name="Alk_Phos" placeholder="e.g. 900" step="1" min="0"/>
+          <span class="ref">Normal: <span class="ref-normal">44 – 147</span></span>
+        </div>
+        <div class="field">
+          <label>SGOT / AST (U/L)</label>
+          <input type="number" name="SGOT" placeholder="e.g. 100" step="0.1" min="0"/>
+          <span class="ref">Normal: <span class="ref-normal">10 – 40</span></span>
+        </div>
+        <div class="field">
+          <label>Cholesterol (mg/dL)</label>
+          <input type="number" name="Cholesterol" placeholder="e.g. 290" step="1" min="0"/>
+          <span class="ref">Normal: <span class="ref-normal">&lt; 200</span></span>
+        </div>
+        <div class="field">
+          <label>Triglycerides (mg/dL)</label>
+          <input type="number" name="Tryglicerides" placeholder="e.g. 110" step="1" min="0"/>
+          <span class="ref">Normal: <span class="ref-normal">&lt; 150</span></span>
+        </div>
+        <div class="field">
+          <label>Platelets (×10³/µL)</label>
+          <input type="number" name="Platelets" placeholder="e.g. 200" step="1" min="0"/>
+          <span class="ref">Normal: <span class="ref-normal">150 – 400</span></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- SECTION 3: CLINICAL SYMPTOMS -->
+    <div class="form-section">
+      <div class="section-head">
+        <div class="section-num">3</div>
+        <div class="section-info">
+          <h2>Clinical Examination Findings</h2>
+          <p>Physical signs observed during clinical examination</p>
+        </div>
+      </div>
+      <div class="grid g4">
+        <div class="field">
+          <label>Ascites</label>
+          <select name="Ascites">
+            <option value="N">No</option>
+            <option value="Y">Yes</option>
+          </select>
+          <span class="ref">Fluid in abdomen</span>
+        </div>
+        <div class="field">
+          <label>Hepatomegaly</label>
+          <select name="Hepatomegaly">
+            <option value="N">No</option>
+            <option value="Y">Yes</option>
+          </select>
+          <span class="ref">Enlarged liver</span>
+        </div>
+        <div class="field">
+          <label>Spider Angiomas</label>
+          <select name="Spiders">
+            <option value="N">No</option>
+            <option value="Y">Yes</option>
+          </select>
+          <span class="ref">Vascular skin lesions</span>
+        </div>
+        <div class="field">
+          <label>Oedema</label>
+          <select name="Edema">
+            <option value="N">Absent</option>
+            <option value="S">Present — No diuretics</option>
+            <option value="Y">Present — With diuretics</option>
+          </select>
+          <span class="ref">Peripheral fluid retention</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- FOOTER -->
+    <div class="form-footer">
+      <div class="btn-row">
+        <button type="submit" class="btn-primary" id="submit-btn">
+          🔬 Run Prediction Analysis
+        </button>
+        <button type="reset" class="btn-secondary">Clear All Fields</button>
+      </div>
+      <p class="form-disclaimer">
+        ⚠️ This tool is for research and academic use only. Predictions are generated by a machine
+        learning model and must not replace the clinical judgement of a qualified medical professional.
+      </p>
+    </div>
+
+  </form>
+
+  {% if show_about %}
+  <div class="about-panel">
+    <h2>About HepatoAI</h2>
+    <p>
+      HepatoAI is a <strong>Final Year B.E. Project</strong> developed at the Department of Computer Science &amp;
+      Engineering, Sharnbasva University, Kalaburagi. It applies a <strong>Random Forest</strong> ensemble
+      machine learning classifier to predict the stage of liver cirrhosis (Stages 1–4) from routine
+      clinical and laboratory data, providing non-invasive decision support for hepatology clinicians.
+    </p>
+    <div class="about-grid">
+      <div class="about-item"><strong>Core Algorithm</strong><span>Random Forest (200 Trees)</span></div>
+      <div class="about-item"><strong>Dataset Source</strong><span>UCI — cirrhosis.csv</span></div>
+      <div class="about-item"><strong>Training Samples</strong><span>412 Patients</span></div>
+      <div class="about-item"><strong>Input Features</strong><span>27 (post-encoding)</span></div>
+      <div class="about-item"><strong>Prediction Target</strong><span>4-Class Stage (1–4)</span></div>
+      <div class="about-item"><strong>Models Evaluated</strong><span>6 Classifiers Compared</span></div>
+    </div>
+  </div>
+  {% endif %}
+
+</main>
+
+<!-- FOOTER -->
+<footer>
+  <span class="footer-brand">🫀 HepatoAI — Liver Cirrhosis Decision Support</span>
+  <span class="footer-info">Final Year Project · B.E. CSE · Sharnbasva University, Kalaburagi · 2025–26</span>
+</footer>
+
+<script>
+document.getElementById("form").addEventListener("submit",function(){
+  var b=document.getElementById("submit-btn");
+  b.textContent="⏳ Analysing...";b.disabled=true;
+});
+</script>
+</body>
+</html>

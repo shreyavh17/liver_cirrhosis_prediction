@@ -1,0 +1,1095 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>AI Analysis — HepatoAI</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@300;400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
+<style>
+/* ══════════════════════════════════════════
+   HepatoAI — Result Dashboard
+   Clean dark clinical theme
+   ══════════════════════════════════════════ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:      #0F1923;
+  --surface: #162032;
+  --card:    #1C2D40;
+  --card2:   #213348;
+  --border:  rgba(255,255,255,.08);
+  --border2: rgba(255,255,255,.04);
+  --text:    #E2EBF4;
+  --muted:   #7A9AB8;
+  --muted2:  #4A6A84;
+  --teal:    #0DB4A0;
+  --teal-d:  #0A8F7E;
+  --teal-glow: rgba(13,180,160,.12);
+  --s1: #10B981;  --s2: #F59E0B;
+  --s3: #F97316;  --s4: #EF4444;
+  --mono: 'IBM Plex Mono', monospace;
+  --radius: 10px;
+}
+
+html { font-size: 13.5px; }
+body {
+  font-family: 'IBM Plex Sans', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── SCROLLBAR ── */
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-thumb { background: var(--card2); border-radius: 3px; }
+
+/* ══ LOADING SCREEN ══ */
+#loader {
+  position: fixed; inset: 0;
+  background: var(--bg);
+  z-index: 999;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 24px;
+  transition: opacity .5s ease;
+}
+#loader.done { opacity: 0; pointer-events: none; }
+
+.loader-icon {
+  font-size: 3rem;
+  animation: float 2s ease-in-out infinite;
+}
+@keyframes float {
+  0%,100% { transform: translateY(0); }
+  50%      { transform: translateY(-8px); }
+}
+
+.loader-title {
+  font-size: 1.1rem; font-weight: 700;
+  color: var(--text); letter-spacing: -.2px;
+}
+.loader-sub {
+  font-size: .68rem; font-family: var(--mono);
+  color: var(--teal); text-transform: uppercase; letter-spacing: 1px;
+}
+
+.loader-steps {
+  display: flex; flex-direction: column; gap: 8px;
+  width: 320px;
+}
+.step {
+  display: flex; align-items: center; gap: 10px;
+  padding: 9px 13px; border-radius: 8px;
+  background: var(--surface); border: 1px solid var(--border);
+  font-size: .75rem; color: var(--muted);
+}
+.step-icon { font-size: .85rem; }
+.step-status {
+  margin-left: auto; font-size: .65rem;
+  font-family: var(--mono); font-weight: 600;
+}
+.step-status.wait   { color: var(--muted2); }
+.step-status.active { color: var(--teal); animation: blink .7s infinite; }
+.step-status.done   { color: var(--s1); }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
+
+.loader-progress {
+  width: 320px; height: 3px;
+  background: var(--surface); border-radius: 999px; overflow: hidden;
+}
+.loader-bar {
+  height: 100%; width: 0;
+  background: linear-gradient(90deg, var(--teal), var(--s1));
+  border-radius: 999px;
+  transition: width .4s ease;
+}
+
+/* ══ TOPBAR ══ */
+.topbar {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 0 20px;
+  height: 36px;
+  display: flex; align-items: center; justify-content: space-between;
+  font-size: .64rem; color: var(--muted2); font-family: var(--mono);
+  flex-shrink: 0;
+}
+.tb-dot {
+  width: 5px; height: 5px; border-radius: 50%;
+  background: var(--s1); display: inline-block;
+  animation: pulse 2s infinite; margin-right: 5px;
+}
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.3} }
+
+/* ══ HEADER ══ */
+header {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.hdr {
+  max-width: 1300px; margin: 0 auto;
+  padding: 0 20px; height: 54px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+.brand {
+  display: flex; align-items: center; gap: 11px;
+  text-decoration: none;
+}
+.brand-icon {
+  width: 34px; height: 34px;
+  background: linear-gradient(135deg, var(--teal), var(--teal-d));
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px;
+  box-shadow: 0 0 16px var(--teal-glow);
+}
+.brand-name {
+  font-size: .95rem; font-weight: 700;
+  color: var(--text); letter-spacing: -.2px;
+}
+.brand-sub {
+  font-size: .58rem; color: var(--teal);
+  font-family: var(--mono); text-transform: uppercase;
+  letter-spacing: .8px; margin-top: 1px;
+}
+nav { display: flex; gap: 6px; align-items: center; }
+.nav-link {
+  padding: 6px 14px; border-radius: 7px;
+  font-size: .77rem; font-weight: 500;
+  color: var(--muted); text-decoration: none;
+  transition: all .15s;
+}
+.nav-link:hover { background: var(--card); color: var(--text); }
+.nav-btn {
+  background: var(--teal); color: #fff;
+  padding: 7px 16px; border-radius: 7px;
+  font-size: .77rem; font-weight: 600;
+  text-decoration: none; transition: background .15s;
+}
+.nav-btn:hover { background: var(--teal-d); }
+
+/* ══ BREADCRUMB ══ */
+.breadcrumb {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border2);
+  padding: 8px 20px;
+  font-size: .64rem; font-family: var(--mono);
+  color: var(--muted2);
+  flex-shrink: 0;
+}
+.breadcrumb a { color: var(--teal); text-decoration: none; }
+.breadcrumb a:hover { text-decoration: underline; }
+.bc-sep { margin: 0 6px; opacity: .4; }
+
+/* ══ MAIN ══ */
+main {
+  flex: 1;
+  max-width: 1300px; margin: 0 auto;
+  padding: 20px 20px 60px;
+  width: 100%;
+}
+
+/* ══ STAGE BANNER ══ */
+.stage-banner {
+  border-radius: 12px;
+  padding: 22px 26px;
+  display: flex; align-items: center; gap: 20px;
+  flex-wrap: wrap; margin-bottom: 16px;
+  position: relative; overflow: hidden;
+}
+.stage-banner::before {
+  content: '';
+  position: absolute; top: -60px; right: -60px;
+  width: 220px; height: 220px; border-radius: 50%;
+  background: rgba(255,255,255,.05);
+  pointer-events: none;
+}
+.stage-banner::after {
+  content: 'S{{ stage }}';
+  position: absolute; right: 26px; bottom: -10px;
+  font-size: 5rem; font-weight: 800; font-family: var(--mono);
+  color: rgba(255,255,255,.06); letter-spacing: -3px;
+  pointer-events: none; user-select: none;
+}
+.sb-emblem {
+  width: 74px; height: 74px; border-radius: 14px;
+  background: rgba(255,255,255,.12);
+  border: 2px solid rgba(255,255,255,.18);
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  flex-shrink: 0;
+}
+.sb-num {
+  font-size: 2.2rem; font-weight: 800;
+  color: #fff; line-height: 1; font-family: var(--mono);
+}
+.sb-lbl {
+  font-size: .52rem; color: rgba(255,255,255,.6);
+  text-transform: uppercase; letter-spacing: 1px;
+}
+.sb-content { flex: 1; }
+.sb-badge {
+  display: inline-flex; align-items: center; gap: 5px;
+  padding: 3px 11px; border-radius: 4px;
+  font-size: .6rem; font-weight: 700;
+  letter-spacing: 1.2px; text-transform: uppercase;
+  background: rgba(255,255,255,.18); color: #fff;
+  margin-bottom: 8px; font-family: var(--mono);
+}
+.sb-title {
+  font-size: 1.2rem; font-weight: 700;
+  color: #fff; margin-bottom: 5px; letter-spacing: -.2px;
+}
+.sb-detail {
+  font-size: .76rem; color: rgba(255,255,255,.78);
+  line-height: 1.6; max-width: 460px;
+}
+.sb-right {
+  display: flex; gap: 10px; margin-left: auto; flex-shrink: 0;
+}
+.sb-metric {
+  background: rgba(255,255,255,.11);
+  border: 1px solid rgba(255,255,255,.14);
+  border-radius: 9px; padding: 11px 18px;
+  text-align: center; min-width: 80px;
+}
+.sb-mv {
+  font-size: 1.4rem; font-weight: 700;
+  color: #fff; font-family: var(--mono); line-height: 1;
+}
+.sb-ml {
+  font-size: .56rem; color: rgba(255,255,255,.6);
+  text-transform: uppercase; letter-spacing: .5px; margin-top: 3px;
+}
+
+/* Stage 4 critical alert */
+.critical-alert {
+  background: linear-gradient(90deg, rgba(127,0,0,.4), rgba(185,0,0,.2));
+  border-left: 3px solid var(--s4);
+  border-radius: 0 8px 8px 0;
+  padding: 11px 16px;
+  font-size: .8rem; color: #FCA5A5;
+  display: flex; align-items: center; gap: 10px;
+  margin-bottom: 16px;
+}
+
+/* ══ AVP STRIP ══ */
+.avp {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 9px; padding: 11px 16px;
+  display: flex; align-items: center; gap: 14px;
+  flex-wrap: wrap; margin-bottom: 16px;
+}
+.avp-block { display: flex; flex-direction: column; gap: 2px; }
+.avp-label {
+  font-size: .58rem; font-family: var(--mono);
+  text-transform: uppercase; letter-spacing: .6px; color: var(--muted2);
+}
+.avp-value { font-size: .88rem; font-weight: 700; }
+.avp-arrow { color: var(--muted2); font-size: 1rem; }
+.verdict {
+  margin-left: auto; padding: 5px 13px;
+  border-radius: 6px; font-size: .72rem; font-weight: 700;
+  font-family: var(--mono);
+}
+.verdict.ok  { background: rgba(16,185,129,.15); color: #6EE7B7; border: 1px solid rgba(16,185,129,.25); }
+.verdict.no  { background: rgba(239,68,68,.15);  color: #FCA5A5; border: 1px solid rgba(239,68,68,.25); }
+
+/* ══ GRID ══ */
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+.grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; }
+.mb { margin-bottom: 14px; }
+
+/* ══ CARDS ══ */
+.card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 18px;
+}
+.card-title {
+  font-size: .6rem; font-family: var(--mono);
+  text-transform: uppercase; letter-spacing: .9px;
+  color: var(--muted2); margin-bottom: 14px;
+  display: flex; align-items: center; gap: 7px;
+}
+.card-title .ci { font-size: .8rem; }
+.card-badge {
+  margin-left: auto; font-size: .58rem;
+  padding: 2px 7px; border-radius: 4px;
+  background: var(--card2); color: var(--muted);
+}
+
+/* ══ CLINICAL STORY ══ */
+.story-box {
+  background: linear-gradient(135deg,
+    rgba(13,180,160,.07) 0%,
+    rgba(37,99,235,.04) 100%);
+  border: 1px solid rgba(13,180,160,.2);
+  border-radius: var(--radius);
+  padding: 15px 18px; margin-bottom: 14px;
+}
+.story-label {
+  font-size: .58rem; font-family: var(--mono);
+  text-transform: uppercase; letter-spacing: 1px;
+  color: var(--teal); margin-bottom: 8px;
+  display: flex; align-items: center; gap: 6px;
+}
+.story-text {
+  font-size: .8rem; line-height: 1.7; color: var(--muted);
+}
+.story-text strong { color: var(--text); font-weight: 600; }
+.story-text em { color: #FCA5A5; font-style: normal; }
+
+/* ══ GAUGE ══ */
+.gauge-wrap {
+  display: flex; flex-direction: column;
+  align-items: center; gap: 8px; padding: 8px 0 4px;
+}
+.gauge-svg { overflow: visible; }
+.gauge-track {
+  fill: none; stroke: var(--card2);
+  stroke-width: 12; stroke-linecap: round;
+}
+.gauge-fill {
+  fill: none; stroke-width: 12;
+  stroke-linecap: round;
+  stroke-dasharray: 220;
+  stroke-dashoffset: 220;
+  transition: stroke-dashoffset 1.4s cubic-bezier(.4,0,.2,1);
+}
+.gauge-labels {
+  display: flex; justify-content: space-between;
+  width: 160px; font-size: .58rem; color: var(--muted2);
+  font-family: var(--mono);
+}
+.gauge-center { text-align: center; margin-top: -4px; }
+.gauge-val {
+  font-size: 1.8rem; font-weight: 700;
+  font-family: var(--mono); line-height: 1;
+}
+.gauge-sub {
+  font-size: .6rem; color: var(--muted2);
+  text-transform: uppercase; letter-spacing: .5px;
+}
+
+/* ══ PROBABILITY BARS ══ */
+.prob-row {
+  display: flex; align-items: center; gap: 9px;
+  margin-bottom: 8px;
+}
+.prob-row:last-child { margin-bottom: 0; }
+.prob-label {
+  font-size: .7rem; font-weight: 600;
+  font-family: var(--mono); color: var(--muted);
+  min-width: 48px;
+}
+.prob-track {
+  flex: 1; background: var(--bg);
+  border-radius: 999px; height: 9px; overflow: hidden;
+}
+.prob-fill {
+  height: 100%; border-radius: 999px;
+  width: 0;
+  transition: width 1s cubic-bezier(.4,0,.2,1);
+}
+.prob-pct {
+  font-size: .7rem; font-weight: 700;
+  font-family: var(--mono);
+  min-width: 38px; text-align: right;
+}
+
+/* ══ LAB FLAGS ══ */
+.lab-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+.lab-item {
+  border-radius: 8px; padding: 10px 11px;
+  border: 1px solid var(--border);
+  background: var(--card2);
+}
+.lab-item.high { border-left: 2px solid var(--s4); background: rgba(239,68,68,.07); }
+.lab-item.low  { border-left: 2px solid #3B82F6;   background: rgba(59,130,246,.07); }
+.lab-item.ok   { border-left: 2px solid var(--s1); background: rgba(16,185,129,.07); }
+.lab-name {
+  font-size: .58rem; font-family: var(--mono);
+  text-transform: uppercase; letter-spacing: .3px;
+  color: var(--muted2); margin-bottom: 4px;
+}
+.lab-val {
+  font-size: .92rem; font-weight: 700;
+  font-family: var(--mono);
+}
+.lab-item.high .lab-val { color: #FCA5A5; }
+.lab-item.low  .lab-val { color: #93C5FD; }
+.lab-item.ok   .lab-val { color: #6EE7B7; }
+.lab-unit { font-size: .6rem; font-weight: 400; opacity: .7; }
+.lab-flag {
+  font-size: .58rem; font-weight: 600; margin-top: 2px;
+}
+.lab-item.high .lab-flag { color: #FCA5A5; }
+.lab-item.low  .lab-flag { color: #93C5FD; }
+.lab-item.ok   .lab-flag { color: #6EE7B7; }
+
+/* ══ XAI CONTRIBUTIONS ══ */
+.xai-item {
+  border-radius: 8px; padding: 10px 12px;
+  background: var(--card2); margin-bottom: 8px;
+  border-left: 2px solid var(--border);
+}
+.xai-item.risk { border-left-color: var(--s4); background: rgba(239,68,68,.07); }
+.xai-item.protective { border-left-color: var(--s1); background: rgba(16,185,129,.07); }
+.xai-item.neutral { border-left-color: var(--muted2); }
+.xai-item:last-child { margin-bottom: 0; }
+.xai-top {
+  display: flex; justify-content: space-between;
+  align-items: center; margin-bottom: 7px;
+}
+.xai-name { font-size: .78rem; font-weight: 600; color: var(--text); }
+.xai-dir {
+  font-size: .6rem; font-weight: 700;
+  padding: 2px 8px; border-radius: 4px;
+  font-family: var(--mono);
+}
+.xai-dir.risk      { background: rgba(239,68,68,.2);  color: #FCA5A5; }
+.xai-dir.protective{ background: rgba(16,185,129,.2); color: #6EE7B7; }
+.xai-dir.neutral   { background: var(--card); color: var(--muted); }
+.xai-bar-bg {
+  height: 5px; background: var(--bg);
+  border-radius: 999px; overflow: hidden;
+}
+.xai-bar-fill {
+  height: 100%; border-radius: 999px;
+  transition: width 1.1s ease; width: 0;
+}
+.xai-meta {
+  display: flex; justify-content: space-between;
+  margin-top: 5px; font-size: .6rem;
+  color: var(--muted2); font-family: var(--mono);
+}
+
+/* ══ STAGE LADDER ══ */
+.stage-ladder { display: flex; flex-direction: column; gap: 6px; }
+.sl-row {
+  display: flex; align-items: center; gap: 11px;
+  padding: 9px 13px; border-radius: 8px;
+  background: var(--card2); border-left: 3px solid transparent;
+}
+.sl-row.active { background: rgba(255,255,255,.04); }
+.sl-num { font-size: .8rem; font-weight: 700; font-family: var(--mono); min-width: 54px; }
+.sl-lbl { font-size: .8rem; color: var(--muted); flex: 1; }
+.sl-tag { font-size: .65rem; font-weight: 700; font-family: var(--mono); }
+
+/* ══ ADVICE ══ */
+.advice-list { list-style: none; }
+.advice-item {
+  display: flex; align-items: flex-start; gap: 10px;
+  font-size: .8rem; color: var(--muted);
+  padding: 8px 0; border-bottom: 1px solid var(--border2);
+  line-height: 1.55;
+}
+.advice-item:last-child { border-bottom: none; }
+.advice-dot {
+  width: 7px; height: 7px; border-radius: 50%;
+  flex-shrink: 0; margin-top: 5px;
+}
+
+/* ══ CHART ══ */
+.chart-wrap { position: relative; }
+.h-200 { height: 200px; }
+.h-220 { height: 220px; }
+.h-180 { height: 180px; }
+
+/* ══ PATIENT SUMMARY ══ */
+.summary-grid { display: flex; flex-direction: column; }
+.sum-row {
+  display: flex; justify-content: space-between;
+  align-items: center; padding: 7px 0;
+  border-bottom: 1px solid var(--border2);
+  font-size: .8rem;
+}
+.sum-row:last-child { border-bottom: none; }
+.sum-key { color: var(--muted); }
+.sum-val { font-weight: 600; font-family: var(--mono); color: var(--text); }
+
+/* ══ BOTTOM ACTIONS ══ */
+.action-row {
+  display: flex; gap: 10px; flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+.btn-primary {
+  display: inline-flex; align-items: center; gap: 8px;
+  background: var(--teal); color: #fff;
+  padding: 10px 22px; border-radius: 8px;
+  font-family: 'IBM Plex Sans', sans-serif;
+  font-size: .84rem; font-weight: 600;
+  text-decoration: none; border: none; cursor: pointer;
+  transition: background .15s;
+}
+.btn-primary:hover { background: var(--teal-d); }
+.btn-outline {
+  display: inline-flex; align-items: center; gap: 8px;
+  background: transparent;
+  border: 1px solid var(--border); color: var(--muted);
+  padding: 9px 20px; border-radius: 8px;
+  font-family: 'IBM Plex Sans', sans-serif;
+  font-size: .84rem; cursor: pointer; transition: all .15s;
+}
+.btn-outline:hover { border-color: var(--muted); color: var(--text); }
+
+/* ══ DISCLAIMER ══ */
+.disclaimer {
+  background: rgba(245,158,11,.07);
+  border: 1px solid rgba(245,158,11,.2);
+  border-radius: 8px; padding: 12px 15px;
+  font-size: .72rem; color: #FCD34D; line-height: 1.6;
+}
+
+/* ══ FOOTER ══ */
+footer {
+  background: var(--surface);
+  border-top: 1px solid var(--border);
+  padding: 16px 20px;
+  display: flex; justify-content: space-between;
+  align-items: center; flex-wrap: wrap; gap: 10px;
+  flex-shrink: 0;
+}
+.footer-brand { font-size: .75rem; font-weight: 600; color: var(--teal); }
+.footer-info  { font-size: .68rem; color: var(--muted2); }
+
+@media(max-width:900px){
+  .grid-2,.grid-3{grid-template-columns:1fr}
+  .lab-grid{grid-template-columns:repeat(2,1fr)}
+  .sb-right{margin-left:0;width:100%}
+}
+@media print {
+  #loader,header,.topbar,.breadcrumb,.action-row,footer{display:none}
+  body{background:#fff;color:#000}
+  .card{border:1px solid #ccc;box-shadow:none}
+}
+</style>
+</head>
+<body>
+
+<!-- ══ LOADING SCREEN ══ -->
+<div id="loader">
+  <div class="loader-icon">🧬</div>
+  <div class="loader-title">HepatoAI Analysis Engine</div>
+  <div class="loader-sub">Processing Clinical Data</div>
+
+  <div class="loader-steps">
+    <div class="step" id="ls1">
+      <span class="step-icon">🔬</span>
+      <span>Analysing liver biomarkers</span>
+      <span class="step-status active" id="ls1s">RUNNING</span>
+    </div>
+    <div class="step" id="ls2">
+      <span class="step-icon">🌲</span>
+      <span>Running Random Forest (200 trees)</span>
+      <span class="step-status wait" id="ls2s">PENDING</span>
+    </div>
+    <div class="step" id="ls3">
+      <span class="step-icon">📊</span>
+      <span>Evaluating fibrosis severity</span>
+      <span class="step-status wait" id="ls3s">PENDING</span>
+    </div>
+    <div class="step" id="ls4">
+      <span class="step-icon">💡</span>
+      <span>Generating explainable insights</span>
+      <span class="step-status wait" id="ls4s">PENDING</span>
+    </div>
+  </div>
+
+  <div class="loader-progress">
+    <div class="loader-bar" id="lbar"></div>
+  </div>
+</div>
+
+<!-- ══ TOPBAR ══ -->
+<div class="topbar">
+  <div style="display:flex;gap:18px">
+    <span><span class="tb-dot"></span>System Online</span>
+    <span>🏥 Sharnbasva University Hospital — Clinical AI Suite</span>
+  </div>
+  <span>HepatoAI v3.0 · Random Forest Classifier</span>
+</div>
+
+<!-- ══ HEADER ══ -->
+<header>
+  <div class="hdr">
+    <a href="/" class="brand">
+      <div class="brand-icon">🫀</div>
+      <div>
+        <div class="brand-name">HepatoAI</div>
+        <div class="brand-sub">Clinical Decision Support · Liver Disease</div>
+      </div>
+    </a>
+    <nav>
+      <a href="/" class="nav-link">Patient Database</a>
+      <a href="/manual" class="nav-link">Manual Entry</a>
+      <a href="/analytics" class="nav-link">Analytics</a>
+      <a href="/" class="nav-btn">+ New Assessment</a>
+    </nav>
+  </div>
+</header>
+
+<!-- ══ BREADCRUMB ══ -->
+<div class="breadcrumb">
+  <a href="/">Patient Database</a>
+  <span class="bc-sep">›</span>
+  <span>AI Analysis Result</span>
+  {% if patient_id %}
+  <span class="bc-sep">›</span>
+  <span>PID-{{ '%04d'|format(patient_id|int) }}</span>
+  {% endif %}
+</div>
+
+<!-- ══ MAIN ══ -->
+<main>
+
+  <!-- Stage Banner -->
+  <div class="stage-banner" style="background:
+    {% if stage==1 %}linear-gradient(135deg,#064E3B,#059669)
+    {% elif stage==2 %}linear-gradient(135deg,#78350F,#D97706)
+    {% elif stage==3 %}linear-gradient(135deg,#7C2D12,#EA580C)
+    {% else %}linear-gradient(135deg,#7F1D1D,#DC2626)
+    {% endif %}">
+
+    <div class="sb-emblem">
+      <div class="sb-num">{{ stage }}</div>
+      <div class="sb-lbl">Stage</div>
+    </div>
+
+    <div class="sb-content">
+      <div class="sb-badge">⬡ {{ badge }}</div>
+      <div class="sb-title">{{ label }}</div>
+      <div class="sb-detail">{{ detail }}</div>
+    </div>
+
+    <div class="sb-right">
+      <div class="sb-metric">
+        <div class="sb-mv">{{ confidence }}%</div>
+        <div class="sb-ml">Confidence</div>
+      </div>
+      <div class="sb-metric">
+        <div class="sb-mv">{{ risk_score }}</div>
+        <div class="sb-ml">Risk /100</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Critical alert for Stage 4 -->
+  {% if stage == 4 %}
+  <div class="critical-alert">
+    🚨 <strong>CRITICAL ALERT:</strong> Stage 4 Decompensated Cirrhosis detected. Immediate specialist referral and urgent clinical evaluation required. Do not delay.
+  </div>
+  {% endif %}
+
+  <!-- Actual vs Predicted (selector only) -->
+  {% if from_selector %}
+  <div class="avp">
+    <div class="avp-block">
+      <span class="avp-label">🏥 Known Actual Stage</span>
+      <span class="avp-value" style="color:
+        {% if actual_stage==1 %}var(--s1)
+        {% elif actual_stage==2 %}var(--s2)
+        {% elif actual_stage==3 %}var(--s3)
+        {% else %}var(--s4){% endif %}">
+        Stage {{ actual_stage }} — {{ stage_info[actual_stage]['label'] }}
+      </span>
+    </div>
+    <span class="avp-arrow">→</span>
+    <div class="avp-block">
+      <span class="avp-label">🤖 Model Predicted</span>
+      <span class="avp-value" style="color:{{ color }}">
+        Stage {{ stage }} — {{ info['label'] }}
+      </span>
+    </div>
+    <span class="verdict {{ 'ok' if is_correct else 'no' }}">
+      {{ '✓ Correct Prediction' if is_correct else '✗ Prediction Differs' }}
+    </span>
+    {% if patient_id %}
+    <span style="font-size:.65rem;color:var(--muted2);font-family:var(--mono)">
+      PID-{{ '%04d'|format(patient_id|int) }}
+    </span>
+    {% endif %}
+  </div>
+  {% endif %}
+
+  <!-- Clinical Story -->
+  <div class="story-box mb">
+    <div class="story-label">📖 Clinical Narrative — AI Interpretation</div>
+    <p class="story-text" id="story-text">
+      <!-- Filled by JS -->
+    </p>
+  </div>
+
+  <!-- Row 1: Gauge + Probs + Labs -->
+  <div class="grid-2 mb">
+
+    <!-- Left: Gauge + Probabilities -->
+    <div class="card">
+      <div class="card-title"><span class="ci">🎯</span> AI Risk Assessment</div>
+
+      <!-- Gauge -->
+      <div class="gauge-wrap">
+        <svg class="gauge-svg" width="190" height="110" viewBox="0 0 190 110">
+          <path class="gauge-track"
+            d="M 20 100 A 75 75 0 0 1 170 100"/>
+          <path class="gauge-fill" id="gauge-path"
+            d="M 20 100 A 75 75 0 0 1 170 100"
+            stroke="{{ color }}"
+            stroke-dasharray="236" stroke-dashoffset="236"/>
+          <text x="95" y="88" text-anchor="middle"
+            font-size="24" font-weight="700"
+            fill="{{ color }}" font-family="'IBM Plex Mono',monospace">{{ risk_score }}</text>
+          <text x="95" y="102" text-anchor="middle"
+            font-size="8.5" fill="#4A6A84" font-family="'IBM Plex Sans',sans-serif"
+            text-transform="uppercase">RISK SCORE / 100</text>
+        </svg>
+        <div class="gauge-labels">
+          <span>Low</span><span>Moderate</span><span>Critical</span>
+        </div>
+      </div>
+
+      <div style="margin-top:18px">
+        {% for p in probabilities %}
+        <div class="prob-row">
+          <span class="prob-label">Stage {{ p.stage }}</span>
+          <div class="prob-track">
+            <div class="prob-fill" data-pct="{{ p.pct }}" style="background:{{ p.color }}"></div>
+          </div>
+          <span class="prob-pct" style="color:{{ p.color }}">{{ p.pct }}%</span>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- Right: Lab Flags -->
+    <div class="card">
+      <div class="card-title">
+        <span class="ci">🧪</span> Lab Value Flags
+        <span class="card-badge">Abnormality Detection</span>
+      </div>
+      <div class="lab-grid">
+        {% for key, info_f in lab_flags.items() %}
+        <div class="lab-item {{ info_f.status if info_f.status in ['high','low'] else 'ok' }}">
+          <div class="lab-name">{{ info_f.label.split()[-1] }}</div>
+          <div class="lab-val">
+            {{ info_f.val }}
+            <span class="lab-unit">{{ info_f.unit }}</span>
+          </div>
+          <div class="lab-flag">
+            {% if info_f.status == 'high' %}↑ Above Normal (+{{ info_f.deviation }}%)
+            {% elif info_f.status == 'low' %}↓ Below Normal
+            {% else %}✓ Normal Range{% endif %}
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Row 2: XAI + Stage Ref + Chart -->
+  <div class="grid-2 mb">
+
+    <!-- XAI -->
+    <div class="card">
+      <div class="card-title">
+        <span class="ci">💡</span> Explainable AI — Why This Stage?
+        <span class="card-badge">XAI</span>
+      </div>
+      <p style="font-size:.72rem;color:var(--muted);margin-bottom:13px">
+        The model weighted these biomarkers to reach this prediction.
+        <span style="color:#FCA5A5;font-weight:600">↑ Red = risk factor</span> ·
+        <span style="color:#6EE7B7;font-weight:600">↓ Green = protective</span>
+      </p>
+
+      {% if contributions %}
+        {% for c in contributions %}
+        <div class="xai-item {{ c.direction }}">
+          <div class="xai-top">
+            <span class="xai-name">{{ c.label }}</span>
+            <span class="xai-dir {{ c.direction }}">
+              {% if c.direction=='risk' %}↑ Risk Factor
+              {% elif c.direction=='protective' %}↓ Protective
+              {% else %}→ Neutral{% endif %}
+            </span>
+          </div>
+          <div class="xai-bar-bg">
+            <div class="xai-bar-fill" data-pct="{{ c.magnitude }}"
+              style="background:{% if c.direction=='risk' %}var(--s4){% elif c.direction=='protective' %}var(--s1){% else %}var(--muted2){% endif %}">
+            </div>
+          </div>
+          <div class="xai-meta">
+            <span>Value: {{ c.val }} {{ c.unit }}</span>
+            <span>Importance: {{ c.pct }}%</span>
+          </div>
+        </div>
+        {% endfor %}
+      {% else %}
+        <p style="font-size:.8rem;color:var(--muted);text-align:center;padding:20px 0">
+          Enter lab values to see AI contributions.
+        </p>
+      {% endif %}
+    </div>
+
+    <!-- Right col: Stage Reference + Probability Chart -->
+    <div style="display:flex;flex-direction:column;gap:14px">
+
+      <!-- Stage ladder -->
+      <div class="card">
+        <div class="card-title"><span class="ci">📊</span> Cirrhosis Staging Reference</div>
+        <div class="stage-ladder">
+          {% for s, c, lbl in [(1,'var(--s1)','Early Fibrosis'),(2,'var(--s2)','Moderate Fibrosis'),(3,'var(--s3)','Advanced Fibrosis'),(4,'var(--s4)','Severe Cirrhosis')] %}
+          <div class="sl-row {% if s==stage %}active{% endif %}"
+            style="{% if s==stage %}border-left-color:{{ c }};{% endif %}">
+            <span class="sl-num" style="color:{{ c }}">Stage {{ s }}</span>
+            <span class="sl-lbl">{{ lbl }}</span>
+            {% if s==stage %}
+              <span class="sl-tag" style="color:{{ c }}">← Predicted</span>
+            {% endif %}
+            {% if from_selector and s==actual_stage and s!=stage %}
+              <span class="sl-tag" style="color:var(--muted2)">← Actual</span>
+            {% endif %}
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+
+      <!-- Probability chart -->
+      <div class="card">
+        <div class="card-title"><span class="ci">📉</span> Probability Distribution</div>
+        <div class="chart-wrap h-180">
+          <canvas id="probChart"></canvas>
+        </div>
+        <p style="font-size:.62rem;color:var(--muted2);text-align:center;margin-top:10px;font-family:var(--mono)">
+          Random Forest · 200 Trees · 27 Features
+        </p>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Row 3: Recommendations + Patient Summary -->
+  <div class="grid-2 mb">
+
+    <div class="card">
+      <div class="card-title"><span class="ci">📋</span> Clinical Recommendations</div>
+      <ul class="advice-list">
+        {% for item in advice %}
+        <li class="advice-item">
+          <span class="advice-dot" style="background:{{ color }}"></span>
+          {{ item }}
+        </li>
+        {% endfor %}
+      </ul>
+    </div>
+
+    <div class="card">
+      <div class="card-title"><span class="ci">📝</span> Patient Input Summary</div>
+      <div class="summary-grid">
+        {% for k,l in [
+          ('Age_Years','Age (Years)'),('Sex','Sex'),('Status','Status'),('Drug','Treatment'),
+          ('Bilirubin','Bilirubin (mg/dL)'),('Albumin','Albumin (g/dL)'),
+          ('Prothrombin','Prothrombin (s)'),('Copper','Copper (µg/day)'),
+          ('Alk_Phos','Alk. Phosphatase (U/L)'),('SGOT','SGOT / AST (U/L)'),
+          ('Cholesterol','Cholesterol (mg/dL)'),('Tryglicerides','Triglycerides (mg/dL)'),
+          ('Platelets','Platelets (×10³/µL)'),
+          ('Ascites','Ascites'),('Hepatomegaly','Hepatomegaly'),
+          ('Spiders','Spider Angiomas'),('Edema','Oedema')
+        ] %}
+        {% if form_data.get(k) %}
+        <div class="sum-row">
+          <span class="sum-key">{{ l }}</span>
+          <span class="sum-val">{{ form_data[k] }}</span>
+        </div>
+        {% endif %}
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Actions -->
+  <div class="action-row">
+    <a href="/" class="btn-primary">← Patient Database</a>
+    <a href="/analytics" class="btn-outline">📈 Model Analytics</a>
+    <button onclick="window.print()" class="btn-outline">🖨️ Print Report</button>
+  </div>
+
+  <div class="disclaimer">
+    ⚠️ <strong>Clinical Disclaimer:</strong> This prediction is generated by a machine learning model
+    trained on the UCI Liver Cirrhosis dataset. It is intended solely for academic and research
+    purposes. It must not replace the clinical judgement of a qualified medical professional.
+  </div>
+
+</main>
+
+<footer>
+  <span class="footer-brand">🫀 HepatoAI — Liver Cirrhosis Decision Support</span>
+  <span class="footer-info">Final Year Project · B.E. CSE · Sharnbasva University, Kalaburagi · 2025–26</span>
+</footer>
+
+<script>
+/* ── DATA FROM FLASK ─────────────────────────────────────────── */
+const STAGE      = {{ stage }};
+const CONFIDENCE = {{ confidence }};
+const RISK_SCORE = {{ risk_score }};
+const PROBA      = {{ probabilities | tojson }};
+const FORM       = {{ form_data | tojson }};
+const FROM_SEL   = {{ from_selector | tojson }};
+const IS_CORRECT = {{ is_correct | tojson }};
+const ACTUAL     = {{ actual_stage }};
+const STAGE_INFO = {{ stage_info | tojson }};
+const COLOR      = "{{ color }}";
+
+/* ── LOADING ANIMATION ───────────────────────────────────────── */
+const STEPS = [
+  {status:'ls1s', delay:0,    done:700 },
+  {status:'ls2s', delay:700,  done:1400},
+  {status:'ls3s', delay:1400, done:2100},
+  {status:'ls4s', delay:2100, done:2700},
+];
+const barEl = document.getElementById('lbar');
+STEPS.forEach((s, i) => {
+  setTimeout(() => {
+    document.getElementById(s.status).textContent = 'RUNNING';
+    document.getElementById(s.status).className = 'step-status active';
+  }, s.delay);
+  setTimeout(() => {
+    document.getElementById(s.status).textContent = 'DONE ✓';
+    document.getElementById(s.status).className = 'step-status done';
+    barEl.style.width = ((i + 1) * 25) + '%';
+  }, s.done);
+});
+setTimeout(() => {
+  document.getElementById('loader').classList.add('done');
+  setTimeout(() => {
+    document.getElementById('loader').style.display = 'none';
+    initAnimations();
+  }, 500);
+}, 3000);
+
+/* ── INIT ALL ANIMATIONS ─────────────────────────────────────── */
+function initAnimations() {
+  animateGauge();
+  animateProbBars();
+  animateXAIBars();
+  buildProbChart();
+  buildStory();
+}
+
+/* ── GAUGE ───────────────────────────────────────────────────── */
+function animateGauge() {
+  const path = document.getElementById('gauge-path');
+  if (!path) return;
+  const total  = 236;
+  const offset = total - (total * RISK_SCORE / 100);
+  setTimeout(() => {
+    path.style.transition = 'stroke-dashoffset 1.4s cubic-bezier(.4,0,.2,1)';
+    path.style.strokeDashoffset = offset;
+  }, 300);
+}
+
+/* ── PROBABILITY BARS ────────────────────────────────────────── */
+function animateProbBars() {
+  document.querySelectorAll('.prob-fill').forEach(el => {
+    const pct = el.dataset.pct;
+    setTimeout(() => { el.style.width = pct + '%'; }, 400);
+  });
+}
+
+/* ── XAI BARS ────────────────────────────────────────────────── */
+function animateXAIBars() {
+  document.querySelectorAll('.xai-bar-fill').forEach(el => {
+    const pct = el.dataset.pct;
+    setTimeout(() => { el.style.width = pct + '%'; }, 500);
+  });
+}
+
+/* ── PROBABILITY CHART ───────────────────────────────────────── */
+function buildProbChart() {
+  const ctx = document.getElementById('probChart');
+  if (!ctx) return;
+  Chart.defaults.font.family = "'IBM Plex Sans', sans-serif";
+  Chart.defaults.color = '#4A6A84';
+  new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: PROBA.map(p => 'Stage ' + p.stage),
+      datasets: [{
+        label: 'Probability %',
+        data: PROBA.map(p => p.pct),
+        backgroundColor: PROBA.map(p => p.color + '99'),
+        borderColor: PROBA.map(p => p.color),
+        borderWidth: 2,
+        borderRadius: 7,
+        borderSkipped: false,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { grid: { display: false }, ticks: { font: { size: 10 } } },
+        y: {
+          grid: { color: 'rgba(255,255,255,.05)' },
+          max: 100,
+          ticks: { callback: v => v + '%', font: { size: 9 } }
+        }
+      },
+      animation: { duration: 900, easing: 'easeOutQuart' }
+    }
+  });
+}
+
+/* ── CLINICAL STORY ──────────────────────────────────────────── */
+function buildStory() {
+  const age  = FORM.Age_Years || '?';
+  const sex  = FORM.Sex === 'F' ? 'female' : 'male';
+  const bil  = parseFloat(FORM.Bilirubin || 0);
+  const alb  = parseFloat(FORM.Albumin   || 0);
+  const pro  = parseFloat(FORM.Prothrombin || 0);
+  const si   = STAGE_INFO[STAGE];
+  const conf = CONFIDENCE.toFixed(1);
+
+  let story = `This <strong>${age}-year-old ${sex}</strong> patient `;
+
+  const abnormal = [];
+  if (bil  > 1.2) abnormal.push(`elevated bilirubin (${bil} mg/dL — ${((bil/1.2-1)*100).toFixed(0)}% above normal)`);
+  if (alb  < 3.5) abnormal.push(`reduced albumin (${alb} g/dL — indicating declining protein synthesis)`);
+  if (pro  > 13.5) abnormal.push(`prolonged prothrombin time (${pro}s — suggesting impaired coagulation)`);
+
+  if (abnormal.length > 0) {
+    story += `presents with <strong>${abnormal.join(', ')}</strong>. `;
+  } else {
+    story += `presents with laboratory values requiring clinical evaluation. `;
+  }
+
+  story += `The Random Forest ensemble — voting across 200 decision trees — predicts `;
+  story += `<strong style="color:${COLOR}">${si.full}</strong> `;
+  story += `with <strong>${conf}% model confidence</strong>. `;
+
+  if (FROM_SEL) {
+    if (IS_CORRECT) {
+      story += `This matches the <strong>clinically confirmed stage</strong> from the UCI Liver Cirrhosis dataset. `;
+    } else {
+      story += `<em>Note: this prediction differs from the clinically confirmed Stage ${ACTUAL} — `;
+      story += `illustrating the model's ~53% cross-validated accuracy on this dataset.</em> `;
+    }
+  }
+
+  story += si.detail;
+
+  document.getElementById('story-text').innerHTML = story;
+}
+</script>
+
+</body>
+</html>

@@ -1,6 +1,7 @@
 services:
   - type: web
-    name: shreyavh17-hepatoai
+    name: vhshreya17-hepatoai
     env: python
+    plan: free
     buildCommand: pip install -r requirements.txt
     startCommand: gunicorn app.app:app

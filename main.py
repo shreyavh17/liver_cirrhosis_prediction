@@ -57,6 +57,11 @@ def main(skip_eda: bool = False, eval_only: bool = False):
     X_train, X_test, y_train, y_test, feature_names, scaler = \
         run_feature_engineering(clean_df)
 
+    # Save scaler for Flask app
+    os.makedirs("models", exist_ok=True)
+    joblib.dump(scaler, "models/scaler.pkl")
+    print("[SAVE] scaler saved -> models/scaler.pkl")
+
     # ── STEP 4: Model Training ────────────────────────────────────────────
     if eval_only and os.path.exists(MODEL_SAVE_PATH):
         print("[SKIP]  Training skipped — loading saved model\n")

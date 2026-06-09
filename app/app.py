@@ -20,7 +20,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), ".."
 try:
     from config import MODEL_SAVE_PATH, SCALER_SAVE_PATH
 except ImportError:
-    MODEL_SAVE_PATH  = os.path.join(os.path.dirname(__file__), "..", "models", "random_forest_model.pkl")
+    MODEL_SAVE_PATH  = os.path.join(os.path.dirname(__file__), "..", "models", "random_forest.pkl")
     SCALER_SAVE_PATH = os.path.join(os.path.dirname(__file__), "..", "models", "scaler.pkl")
 
 # ── NEW: import shap ─────────────────────────────────────────────────────────
